@@ -14,16 +14,4 @@ tagSchema.set('toObject', {
   }
 });
 
-/** GOING PRO CHALLENGE- Move the cascading delete from the endpoint into the schema
-tagSchema.pre('remove', function(next) {
-  mongoose.models.Note.remove({tag: this._id})
-    .then(() => {
-      next();
-    })
-    .catch(err => {
-      next(err);
-    });
-});
-*/
-
 module.exports = mongoose.model('Tag', tagSchema);

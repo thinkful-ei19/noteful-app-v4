@@ -15,7 +15,9 @@ router.get('/folders', (req, res, next) => {
     .then(results => {
       res.json(results);
     })
-    .catch(err => {       next(err);     });
+    .catch(err => {
+      next(err);
+    });
 });
 
 /* ========== GET/READ A SINGLE ITEM ========== */
@@ -36,14 +38,16 @@ router.get('/folders/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(err => {       next(err);     });
+    .catch(err => {
+      next(err);
+    });
 });
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/folders', (req, res, next) => {
   const { name } = req.body;
 
-  const newItem = { name };
+  const newFolder = { name };
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -52,7 +56,7 @@ router.post('/folders', (req, res, next) => {
     return next(err);
   }
 
-  Folder.create(newItem)
+  Folder.create(newFolder)
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
@@ -83,9 +87,9 @@ router.put('/folders/:id', (req, res, next) => {
     return next(err);
   }
 
-  const updateItem = { name };
+  const updateFolder = { name };
 
-  Folder.findByIdAndUpdate(id, updateItem, { new: true })
+  Folder.findByIdAndUpdate(id, updateFolder, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -107,7 +111,6 @@ router.delete('/folders/:id', (req, res, next) => {
   const { id } = req.params;
 
   const folderRemovePromise = Folder.findByIdAndRemove(id);
-  // const noteRemovePromise = Note.deleteMany({ folderId: id });
 
   const noteRemovePromise = Note.updateMany(
     { folderId: id },
@@ -115,16 +118,12 @@ router.delete('/folders/:id', (req, res, next) => {
   );
 
   Promise.all([folderRemovePromise, noteRemovePromise])
-    .then(resultsArray => {
-      const folderResult = resultsArray[0];
-
-      if (folderResult) {
-        res.status(204).end();
-      } else {
-        next();
-      }
+    .then(() => {
+      res.status(204).end();
     })
-    .catch(err => {       next(err);     });
+    .catch(err => {
+      next(err);
+    });
 });
 
 module.exports = router;

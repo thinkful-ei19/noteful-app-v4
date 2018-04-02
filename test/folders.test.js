@@ -2,7 +2,6 @@
 const app = require('../server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const chaiSpies = require('chai-spies');
 const mongoose = require('mongoose');
 
 const { TEST_MONGODB_URI } = require('../config');
@@ -14,7 +13,6 @@ const seedFolders = require('../db/seed/folders');
 const expect = chai.expect;
 
 chai.use(chaiHttp);
-chai.use(chaiSpies);
 
 describe('Noteful API - Folders', function () {
   before(function () {
@@ -24,7 +22,7 @@ describe('Noteful API - Folders', function () {
 
   beforeEach(function () {
     return Folder.insertMany(seedFolders)
-      .then(() => Folder.createIndexes());
+      .then(() => Folder.ensureIndexes());
   });
 
   afterEach(function () {
@@ -35,11 +33,11 @@ describe('Noteful API - Folders', function () {
     return mongoose.disconnect();
   });
 
-  describe('GET /v3/folders', function () {
+  describe('GET /api/folders', function () {
 
     it('should return the correct number of folders', function () {
       const dbPromise = Folder.find();
-      const apiPromise = chai.request(app).get('/v3/folders');
+      const apiPromise = chai.request(app).get('/api/folders');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -52,7 +50,7 @@ describe('Noteful API - Folders', function () {
 
     it('should return a list with the correct right fields', function () {
       const dbPromise = Folder.find();
-      const apiPromise = chai.request(app).get('/v3/folders');
+      const apiPromise = chai.request(app).get('/api/folders');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -69,14 +67,14 @@ describe('Noteful API - Folders', function () {
 
   });
 
-  describe('GET /v3/folders/:id', function () {
+  describe('GET /api/folders/:id', function () {
 
     it('should return correct folder', function () {
       let data;
       return Folder.findOne().select('id name')
         .then(_data => {
           data = _data;
-          return chai.request(app).get(`/v3/folders/${data.id}`);
+          return chai.request(app).get(`/api/folders/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(200);
@@ -92,36 +90,29 @@ describe('Noteful API - Folders', function () {
 
     it('should respond with a 400 for an invalid ID', function () {
       const badId = '99-99-99';
-      const spy = chai.spy();
+
       return chai.request(app)
-        .get(`/v3/folders/${badId}`)
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          const res = err.response;
+        .get(`/api/folders/${badId}`)
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res.body.message).to.eq('The `id` is not valid');
         });
     });
 
-    it('should respond with a 404 for an ID that does not exist', function () {
-      const spy = chai.spy();
+    it('should respond with a 404 for non-existant id', function () {
+
       return chai.request(app)
-        .get('/v3/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          expect(err.response).to.have.status(404);
+        .get('/api/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .catch(err => err.response)
+        .then(res => {
+          expect(res).to.have.status(404);
         });
     });
 
   });
 
-  describe('POST /v3/folders', function () {
+  describe('POST /api/folders', function () {
 
     it('should create and return a new item when provided valid data', function () {
       const newItem = {
@@ -129,7 +120,7 @@ describe('Noteful API - Folders', function () {
       };
       let body;
       return chai.request(app)
-        .post('/v3/folders')
+        .post('/api/folders')
         .send(newItem)
         .then(function (res) {
           body = res.body;
@@ -150,46 +141,38 @@ describe('Noteful API - Folders', function () {
       const newItem = {
         'foo': 'bar'
       };
-      const spy = chai.spy();
+
       return chai.request(app)
-        .post('/v3/folders')
+        .post('/api/folders')
         .send(newItem)
-        .then(spy)
-        .catch(err => {
-          const res = err.response;
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('Missing `name` in request body');
-        })
-        .then(() => {
-          expect(spy).to.not.have.been.called();
         });
     });
 
     it('should return an error when given a duplicate name', function () {
-      const spy = chai.spy();
+
       return Folder.findOne().select('id name')
         .then(data => {
           const newItem = { 'name': data.name };
-          return chai.request(app).post('/v3/folders').send(newItem);
+          return chai.request(app).post('/api/folders').send(newItem);
         })
-        .then(spy)
-        .catch(err => {
-          const res = err.response;
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('The folder name already exists');
-        })
-        .then(() => {
-          expect(spy).to.not.have.been.called();
         });
     });
 
   });
 
-  describe('PUT /v3/folders/:id', function () {
+  describe('PUT /api/folders/:id', function () {
 
     it('should update the folder', function () {
       const updateItem = {
@@ -200,7 +183,7 @@ describe('Noteful API - Folders', function () {
         .then(_data => {
           data = _data;
           return chai.request(app)
-            .put(`/v3/folders/${data.id}`)
+            .put(`/api/folders/${data.id}`)
             .send(updateItem);
         })
         .then(function (res) {
@@ -220,16 +203,12 @@ describe('Noteful API - Folders', function () {
         'name': 'Blah'
       };
       const badId = '99-99-99';
-      const spy = chai.spy();
+
       return chai.request(app)
-        .put(`/v3/folders/${badId}`)
+        .put(`/api/folders/${badId}`)
         .send(updateItem)
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          const res = err.response;
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res.body.message).to.eq('The `id` is not valid');
         });
@@ -239,16 +218,13 @@ describe('Noteful API - Folders', function () {
       const updateItem = {
         'name': 'Blah'
       };
-      const spy = chai.spy();
+
       return chai.request(app)
-        .put('/v3/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .put('/api/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
         .send(updateItem)
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          expect(err.response).to.have.status(404);
+        .catch(err => err.response)
+        .then(res => {
+          expect(res).to.have.status(404);
         });
     });
 
@@ -256,16 +232,12 @@ describe('Noteful API - Folders', function () {
       const updateItem = {
         'foo': 'bar'
       };
-      const spy = chai.spy();
+
       return chai.request(app)
-        .put('/v3/folders/9999')
+        .put('/api/folders/9999')
         .send(updateItem)
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          const res = err.response;
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
@@ -274,52 +246,36 @@ describe('Noteful API - Folders', function () {
     });
 
     it('should return an error when given a duplicate name', function () {
-      const spy = chai.spy();
+
       return Folder.find().select('id name').limit(2)
         .then(results => {
           const [item1, item2] = results;
           item1.name = item2.name;
-          return chai.request(app).put(`/v3/folders/${item1.id}`).send(item1);
+          return chai.request(app).put(`/api/folders/${item1.id}`).send(item1);
         })
-        .then(spy)
-        .catch(err => {
-          const res = err.response;
+        .catch(err => err.response)
+        .then(res => {
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('The folder name already exists');
-        })
-        .then(() => {
-          expect(spy).to.not.have.been.called();
         });
     });
 
   });
 
-  describe('DELETE /v3/folders/:id', function () {
+  describe('DELETE /api/folders/:id', function () {
 
     it('should delete an item by id', function () {
       return Folder.findOne().select('id name')
         .then(data => {
-          return chai.request(app).delete(`/v3/folders/${data.id}`);
+          return chai.request(app).delete(`/api/folders/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(204);
         });
     });
 
-    it('should respond with a 404 for an ID that does not exist', function () {
-      const spy = chai.spy();
-      return chai.request(app)
-        .delete('/v3/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          expect(err.response).to.have.status(404);
-        });
-    });
 
   });
 

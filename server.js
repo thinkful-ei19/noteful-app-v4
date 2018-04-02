@@ -32,11 +32,11 @@ app.use(express.json());
 passport.use(localStrategy);
 
 // Mount routers
-app.use('/v3', usersRouter);
-app.use('/v3', authRouter);
-app.use('/v3', notesRouter);
-app.use('/v3', foldersRouter);
-app.use('/v3', tagsRouter);
+app.use('/api', usersRouter);
+app.use('/api', authRouter);
+app.use('/api', notesRouter);
+app.use('/api', foldersRouter);
+app.use('/api', tagsRouter);
 
 // Catch-all 404
 app.use(function (req, res, next) {
@@ -67,7 +67,7 @@ if (require.main === module) {
       console.error('\n === Did you remember to start `mongod`? === \n');
       console.error(err);
     });
-    
+
   app.listen(PORT, function () {
     console.info(`Server listening on ${this.address().port}`);
   }).on('error', err => {

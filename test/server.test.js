@@ -2,12 +2,10 @@
 const app = require('../server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const chaiSpies = require('chai-spies');
 
 const expect = chai.expect;
 
 chai.use(chaiHttp);
-chai.use(chaiSpies);
 
 describe('Reality Check', () => {
 
@@ -48,15 +46,11 @@ describe('Basic Express setup', () => {
   describe('404 handler', () => {
 
     it('should respond with 404 when given a bad path', () => {
-      const spy = chai.spy();
       return chai.request(app)
         .get('/bad/path')
-        .then(spy)
-        .then(() => {
-          expect(spy).to.not.have.been.called();
-        })
-        .catch(err => {
-          expect(err.response).to.have.status(404);
+        .catch(err => err.response)
+        .then(res => {
+          expect(res).to.have.status(404);
         });
     });
 
