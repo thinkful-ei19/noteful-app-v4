@@ -5,6 +5,6 @@ $(document).ready(function () {
   noteful.bindEventListeners();
 
   noteful.render();
-
+  
 });
 

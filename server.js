@@ -3,12 +3,16 @@
 const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const { PORT, MONGODB_URI } = require('./config');
+const localStrategy = require('./passport/local');
 
 const notesRouter = require('./routes/notes');
 const foldersRouter = require('./routes/folders');
 const tagsRouter = require('./routes/tags');
+const usersRouter = require('./routes/users');
+const authRouter = require('./routes/auth');
 
 // Create an Express application
 const app = express();
@@ -18,16 +22,21 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'common', {
   skip: () => process.env.NODE_ENV === 'test'
 }));
 
-// Create a static webserver
+// Utilize the Express static webserver, passing in the directory name
 app.use(express.static('public'));
 
-// Parse request body
+// Utilize the Express `.json()` body parser
 app.use(express.json());
 
-// Mount router on "/api"
-app.use('/api', notesRouter);
-app.use('/api', foldersRouter);
-app.use('/api', tagsRouter);
+// Utilize the given `strategy`
+passport.use(localStrategy);
+
+// Mount routers
+app.use('/v3', usersRouter);
+app.use('/v3', authRouter);
+app.use('/v3', notesRouter);
+app.use('/v3', foldersRouter);
+app.use('/v3', tagsRouter);
 
 // Catch-all 404
 app.use(function (req, res, next) {
@@ -58,7 +67,7 @@ if (require.main === module) {
       console.error('\n === Did you remember to start `mongod`? === \n');
       console.error(err);
     });
-
+    
   app.listen(PORT, function () {
     console.info(`Server listening on ${this.address().port}`);
   }).on('error', err => {

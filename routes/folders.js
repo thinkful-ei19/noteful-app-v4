@@ -15,9 +15,7 @@ router.get('/folders', (req, res, next) => {
     .then(results => {
       res.json(results);
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => {       next(err);     });
 });
 
 /* ========== GET/READ A SINGLE ITEM ========== */
@@ -38,16 +36,14 @@ router.get('/folders/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => {       next(err);     });
 });
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/folders', (req, res, next) => {
   const { name } = req.body;
 
-  const newFolder = { name };
+  const newItem = { name };
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -56,7 +52,7 @@ router.post('/folders', (req, res, next) => {
     return next(err);
   }
 
-  Folder.create(newFolder)
+  Folder.create(newItem)
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
@@ -87,9 +83,9 @@ router.put('/folders/:id', (req, res, next) => {
     return next(err);
   }
 
-  const updateFolder = { name };
+  const updateItem = { name };
 
-  Folder.findByIdAndUpdate(id, updateFolder, { new: true })
+  Folder.findByIdAndUpdate(id, updateItem, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -110,8 +106,7 @@ router.put('/folders/:id', (req, res, next) => {
 router.delete('/folders/:id', (req, res, next) => {
   const { id } = req.params;
 
-  // Manual "cascading" delete to ensure integrity
-  const folderRemovePromise = Folder.findByIdAndRemove({ _id: id });  // NOTE **underscore** _id
+  const folderRemovePromise = Folder.findByIdAndRemove(id);
   // const noteRemovePromise = Note.deleteMany({ folderId: id });
 
   const noteRemovePromise = Note.updateMany(
@@ -120,12 +115,16 @@ router.delete('/folders/:id', (req, res, next) => {
   );
 
   Promise.all([folderRemovePromise, noteRemovePromise])
-    .then(() => {
-      res.status(204).end();
+    .then(resultsArray => {
+      const folderResult = resultsArray[0];
+
+      if (folderResult) {
+        res.status(204).end();
+      } else {
+        next();
+      }
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => {       next(err);     });
 });
 
 module.exports = router;

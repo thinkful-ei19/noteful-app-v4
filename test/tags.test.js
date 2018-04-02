@@ -2,6 +2,7 @@
 const app = require('../server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const chaiSpies = require('chai-spies');
 const mongoose = require('mongoose');
 
 const { TEST_MONGODB_URI } = require('../config');
@@ -13,6 +14,7 @@ const seedTags = require('../db/seed/tags');
 const expect = chai.expect;
 
 chai.use(chaiHttp);
+chai.use(chaiSpies);
 
 describe('Noteful API - Tags', function () {
   before(function () {
@@ -22,7 +24,7 @@ describe('Noteful API - Tags', function () {
 
   beforeEach(function () {
     return Tag.insertMany(seedTags)
-      .then(() => Tag.ensureIndexes());
+      .then(() => Tag.createIndexes());
   });
 
   afterEach(function () {
@@ -34,11 +36,11 @@ describe('Noteful API - Tags', function () {
     return mongoose.disconnect();
   });
 
-  describe('GET /api/tags', function () {
+  describe('GET /v3/tags', function () {
 
     it('should return the correct number of tags', function () {
       const dbPromise = Tag.find();
-      const apiPromise = chai.request(app).get('/api/tags');
+      const apiPromise = chai.request(app).get('/v3/tags');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -51,7 +53,7 @@ describe('Noteful API - Tags', function () {
 
     it('should return a list with the correct right fields', function () {
       const dbPromise = Tag.find();
-      const apiPromise = chai.request(app).get('/api/tags');
+      const apiPromise = chai.request(app).get('/v3/tags');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -68,14 +70,14 @@ describe('Noteful API - Tags', function () {
 
   });
 
-  describe('GET /api/tags/:id', function () {
+  describe('GET /v3/tags/:id', function () {
 
     it('should return correct tags', function () {
       let data;
       return Tag.findOne().select('id name')
         .then(_data => {
           data = _data;
-          return chai.request(app).get(`/api/tags/${data.id}`);
+          return chai.request(app).get(`/v3/tags/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(200);
@@ -91,29 +93,36 @@ describe('Noteful API - Tags', function () {
 
     it('should respond with a 400 for an invalid ID', function () {
       const badId = '99-99-99';
-
+      const spy = chai.spy();
       return chai.request(app)
-        .get(`/api/tags/${badId}`)
-        .catch(err => err.response)
-        .then(res => {
+        .get(`/v3/tags/${badId}`)
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res.body.message).to.eq('The `id` is not valid');
         });
     });
 
     it('should respond with a 404 for an ID that does not exist', function () {
-
+      const spy = chai.spy();
       return chai.request(app)
-        .get('/api/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(404);
+        .get('/v3/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          expect(err.response).to.have.status(404);
         });
     });
 
   });
 
-  describe('POST /api/tags', function () {
+  describe('POST /v3/tags', function () {
 
     it('should create and return a new item when provided valid data', function () {
       const newItem = {
@@ -121,7 +130,7 @@ describe('Noteful API - Tags', function () {
       };
       let body;
       return chai.request(app)
-        .post('/api/tags')
+        .post('/v3/tags')
         .send(newItem)
         .then(function (res) {
           body = res.body;
@@ -142,38 +151,46 @@ describe('Noteful API - Tags', function () {
       const newItem = {
         'foo': 'bar'
       };
-
+      const spy = chai.spy();
       return chai.request(app)
-        .post('/api/tags')
+        .post('/v3/tags')
         .send(newItem)
-        .catch(err => err.response)
-        .then(res => {
+        .then(spy)
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('Missing `name` in request body');
+        })
+        .then(() => {
+          expect(spy).to.not.have.been.called();
         });
     });
 
     it('should return an error when given a duplicate name', function () {
-
+      const spy = chai.spy();
       return Tag.findOne().select('id name')
         .then(data => {
           const newItem = { 'name': data.name };
-          return chai.request(app).post('/api/tags').send(newItem);
+          return chai.request(app).post('/v3/tags').send(newItem);
         })
-        .catch(err => err.response)
-        .then(res => {
+        .then(spy)
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('The tag name already exists');
+        })
+        .then(() => {
+          expect(spy).to.not.have.been.called();
         });
     });
 
   });
 
-  describe('PUT /api/tags/:id', function () {
+  describe('PUT /v3/tags/:id', function () {
 
     it('should update the tag', function () {
       const updateItem = {
@@ -184,7 +201,7 @@ describe('Noteful API - Tags', function () {
         .then(_data => {
           data = _data;
           return chai.request(app)
-            .put(`/api/tags/${data.id}`)
+            .put(`/v3/tags/${data.id}`)
             .send(updateItem);
         })
         .then(function (res) {
@@ -204,12 +221,16 @@ describe('Noteful API - Tags', function () {
         'name': 'Blah'
       };
       const badId = '99-99-99';
-
+      const spy = chai.spy();
       return chai.request(app)
-        .put(`/api/tags/${badId}`)
+        .put(`/v3/tags/${badId}`)
         .send(updateItem)
-        .catch(err => err.response)
-        .then(res => {
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res.body.message).to.eq('The `id` is not valid');
         });
@@ -219,13 +240,16 @@ describe('Noteful API - Tags', function () {
       const updateItem = {
         'name': 'Blah'
       };
-
+      const spy = chai.spy();
       return chai.request(app)
-        .put('/api/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .put('/v3/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
         .send(updateItem)
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(404);
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          expect(err.response).to.have.status(404);
         });
     });
 
@@ -233,12 +257,16 @@ describe('Noteful API - Tags', function () {
       const updateItem = {
         'foo': 'bar'
       };
-
+      const spy = chai.spy();
       return chai.request(app)
-        .put('/api/tags/9999')
+        .put('/v3/tags/9999')
         .send(updateItem)
-        .catch(err => err.response)
-        .then(res => {
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
@@ -247,33 +275,50 @@ describe('Noteful API - Tags', function () {
     });
 
     it('should return an error when given a duplicate name', function () {
-
+      const spy = chai.spy();
       return Tag.find().select('id name').limit(2)
         .then(results => {
           const [item1, item2] = results;
           item1.name = item2.name;
-          return chai.request(app).put(`/api/tags/${item1.id}`).send(item1);
+          return chai.request(app).put(`/v3/tags/${item1.id}`).send(item1);
         })
-        .catch(err => err.response)
-        .then(res => {
+        .then(spy)
+        .catch(err => {
+          const res = err.response;
           expect(res).to.have.status(400);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('The tag name already exists');
+        })
+        .then(() => {
+          expect(spy).to.not.have.been.called();
         });
     });
 
   });
 
-  describe('DELETE /api/tags/:id', function () {
+  describe('DELETE /v3/tags/:id', function () {
 
     it('should delete an item by id', function () {
       return Tag.findOne().select('id name')
         .then(data => {
-          return chai.request(app).delete(`/api/tags/${data.id}`);
+          return chai.request(app).delete(`/v3/tags/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(204);
+        });
+    });
+
+    it('should respond with a 404 for an ID that does not exist', function () {
+      const spy = chai.spy();
+      return chai.request(app)
+        .delete('/v3/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .then(spy)
+        .then(() => {
+          expect(spy).to.not.have.been.called();
+        })
+        .catch(err => {
+          expect(err.response).to.have.status(404);
         });
     });
 

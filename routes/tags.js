@@ -15,9 +15,7 @@ router.get('/tags', (req, res, next) => {
     .then(results => {
       res.json(results);
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => {       next(err);     });
 });
 
 /* ========== GET/READ A SINGLE ITEM ========== */
@@ -38,9 +36,7 @@ router.get('/tags/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(err => {       next(err);     });
 });
 
 /* ========== POST/CREATE AN ITEM ========== */
@@ -125,8 +121,7 @@ router.delete('/tags/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(err => {
-      next(err); });
+    .catch(err => {       next(err);     });
 
 });
 
