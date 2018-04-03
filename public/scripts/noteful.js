@@ -16,10 +16,10 @@ const noteful = (function () {
   }
 
   function handleErrors(err) {
-    // if (err.status === 401) {
-    // store.authorized = false;
-    // noteful.render();
-    // }
+    if (err.status === 401) {
+      store.authorized = false;
+      noteful.render();
+    }
     showFailureMessage(err.responseJSON.message);
   }
 
@@ -378,7 +378,7 @@ const noteful = (function () {
       api.create('/api/users', newUser)
         .then(response => {
           signupForm[0].reset();
-          showSuccessMessage(`Thank you, ${response.fullname || response.username} for signing up!`);
+          showSuccessMessage(`Thank you, ${response.fullname || response.username} for signing up! Please login.`);
         })
         .catch(handleErrors);
     });
@@ -396,10 +396,9 @@ const noteful = (function () {
 
       api.create('/api/login', loginUser)
         .then(response => {
+          store.authToken = response.authToken;
           store.authorized = true;
           loginForm[0].reset();
-
-          store.currentUser = response;
 
           return Promise.all([
             api.search('/api/notes'),
