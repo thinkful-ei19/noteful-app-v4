@@ -258,10 +258,10 @@ const noteful = (function () {
     $('.js-new-folder-form').on('submit', event => {
       event.preventDefault();
 
-      const newFolderName = $('.js-new-folder-entry').val();
-      api.create('/api/folders', { name: newFolderName })
+      const newFolderEl = $('.js-new-folder-entry');
+      api.create('/api/folders', { name: newFolderEl.val() })
         .then(() => {
-          $('.js-new-folder-entry').val();
+          newFolderEl.val('');
           return api.search('/api/folders');
         })
         .then(response => {
@@ -324,9 +324,11 @@ const noteful = (function () {
     $('.js-new-tag-form').on('submit', event => {
       event.preventDefault();
 
-      const newTagName = $('.js-new-tag-entry').val();
-      api.create('/api/tags', { name: newTagName })
+      const newTagEl = $('.js-new-tag-entry');
+
+      api.create('/api/tags', { name: newTagEl.val() })
         .then(() => {
+          newTagEl.val('');
           return api.search('/api/tags');
         })
         .then(response => {

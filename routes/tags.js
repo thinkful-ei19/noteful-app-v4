@@ -1,12 +1,16 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
-
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const Tag = require('../models/tag');
 const Note = require('../models/note');
+
+const router = express.Router();
+
+// Protect endpoints using JWT Strategy
+router.use('/tags', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/tags', (req, res, next) => {
@@ -109,24 +113,21 @@ router.put('/tags/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/tags/:id', (req, res, next) => {
   const { id } = req.params;
+
   const tagRemovePromise = Tag.findByIdAndRemove(id);
-  // const tagRemovePromise = Tag.remove({ _id: id }); // NOTE **underscore** _id
 
   const noteUpdatePromise = Note.updateMany(
-    { 'tags': id, },
-    { '$pull': { 'tags': id } }
+    { tags: id, },
+    { $pull: { tags: id } }
   );
 
   Promise.all([tagRemovePromise, noteUpdatePromise])
-    .then(([tagResult]) => {
-      if (tagResult) {
-        res.status(204).end();
-      } else {
-        next();
-      }
+    .then(() => {
+      res.status(204).end();
     })
     .catch(err => {
-      next(err); });
+      next(err);
+    });
 
 });
 

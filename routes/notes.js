@@ -1,11 +1,15 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
-
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const Note = require('../models/note');
+
+const router = express.Router();
+
+// Protect endpoints using JWT Strategy
+router.use('/notes', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/notes', (req, res, next) => {
@@ -69,6 +73,7 @@ router.get('/notes/:id', (req, res, next) => {
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/notes', (req, res, next) => {
   const { title, content, folderId, tags } = req.body;
+  const newNote = { title, content, tags };
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -87,9 +92,11 @@ router.post('/notes', (req, res, next) => {
     });
   }
 
-  const newItem = { title, content, folderId, tags };
+  if (mongoose.Types.ObjectId.isValid(folderId)) {
+    newNote.folderId = folderId;
+  }
 
-  Note.create(newItem)
+  Note.create(newNote)
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
@@ -102,6 +109,7 @@ router.post('/notes', (req, res, next) => {
 router.put('/notes/:id', (req, res, next) => {
   const { id } = req.params;
   const { title, content, folderId, tags } = req.body;
+  const updateNote = { title, content, tags };
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -117,7 +125,7 @@ router.put('/notes/:id', (req, res, next) => {
   }
 
   if (mongoose.Types.ObjectId.isValid(folderId)) {
-    updateItem.folderId = folderId;
+    updateNote.folderId = folderId;
   }
 
   if (tags) {
@@ -130,11 +138,7 @@ router.put('/notes/:id', (req, res, next) => {
     });
   }
 
-
-  const updateItem = { title, content, tags };
-  const options = { new: true };
-
-  Note.findByIdAndUpdate(id, updateItem, options)
+  Note.findByIdAndUpdate(id, updateNote, { new: true })
     .populate('tags')
     .then(result => {
       if (result) {

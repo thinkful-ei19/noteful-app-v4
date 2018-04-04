@@ -14,15 +14,4 @@ folderSchema.set('toObject', {
   }
 });
 
-/** BONUS CHALLENGE
- * Move the cascading delete or cascade set null into the schema
-folderSchema.pre('remove', function(next) {
-  mongoose.models.Note.remove({folderId: this._id})
-    .then(() => next())
-    .catch(err => {
-      next(err);
-    });
-});
-*/
-
 module.exports = mongoose.model('Folder', folderSchema);

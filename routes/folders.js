@@ -1,12 +1,16 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
-
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const Folder = require('../models/folder');
 const Note = require('../models/note');
+
+const router = express.Router();
+
+// Protect endpoints using JWT Strategy
+router.use('/folders', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/folders', (req, res, next) => {
@@ -114,7 +118,7 @@ router.delete('/folders/:id', (req, res, next) => {
 
   const noteRemovePromise = Note.updateMany(
     { folderId: id },
-    { '$unset': { 'folderId': '' } }
+    { $unset: { folderId: '' } }
   );
 
   Promise.all([folderRemovePromise, noteRemovePromise])

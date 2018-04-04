@@ -34,17 +34,12 @@ app.use(express.static('public'));
 // Utilize the Express `.json()` body parser
 app.use(express.json());
 
-// Mount **unprotected** routers
-app.use('/api', usersRouter);
-app.use('/api', authRouter);
-
-// Protect endpoints using JWT Strategy
-app.use(passport.authenticate('jwt', { session: false, failWithError: true }));
-
-// Mount **protected** routers
+// Mount routers
 app.use('/api', notesRouter);
 app.use('/api', foldersRouter);
 app.use('/api', tagsRouter);
+app.use('/api', usersRouter);
+app.use('/api', authRouter);
 
 // Catch-all 404
 app.use(function (req, res, next) {
