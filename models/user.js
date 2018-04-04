@@ -26,21 +26,6 @@ userSchema.set('toObject', {
   }
 });
 
-// userSchema.pre('save', function (next) {
-//   const doc = this;
-
-//   if (!doc.isModified('password')) {
-//     return next();
-//   }
-
-//   bcrypt.hash(doc.password, 10)
-//     .then(digest => {
-//       doc.password = digest;
-//       next();
-//     })
-//     .catch(err => {       next(err);     });
-// });
-
 userSchema.methods.validatePassword = function (password) {
   return bcrypt.compare(password, this.password);
 };
