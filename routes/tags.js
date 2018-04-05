@@ -120,21 +120,22 @@ router.delete('/tags/:id', (req, res, next) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const tagRemovePromise = Tag.findByIdAndRemove(id);
-
-  const noteUpdatePromise = Note.updateMany(
-    { tags: id, userId },
-    { $pull: { tags: id } }
-  );
-
-  Promise.all([tagRemovePromise, noteUpdatePromise])
+  Tag.findOneAndRemove({ _id: id, userId })
+    .then(results => {
+      if (!results) {
+        next();
+      }
+      return Note.updateMany(
+        { tags: id, userId },
+        { $pull: { tags: id } }
+      );
+    })
     .then(() => {
       res.status(204).end();
     })
     .catch(err => {
       next(err);
     });
-
 });
 
 module.exports = router;

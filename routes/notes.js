@@ -194,11 +194,10 @@ router.delete('/notes/:id', (req, res, next) => {
 
   Note.findOneAndRemove({ _id: id, userId })
     .then(result => {
-      if (result) {
-        res.status(204).end();
-      } else {
+      if (!result) {
         next();
       }
+      res.status(204).end();
     })
     .catch(err => {
       next(err);
