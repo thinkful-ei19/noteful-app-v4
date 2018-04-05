@@ -102,7 +102,7 @@ router.get('/notes/:id', (req, res, next) => {
 router.post('/notes', (req, res, next) => {
   const { title, content, folderId, tags } = req.body;
   const userId = req.user.id;
-  const newNote = { title, content, tags, userId };
+  const newNote = { title, content, userId };
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -113,10 +113,26 @@ router.post('/notes', (req, res, next) => {
 
   if (mongoose.Types.ObjectId.isValid(folderId)) {
     newNote.folderId = folderId;
+  } else {
+    const err = new Error('The `folderId` is not valid');
+    err.status = 400;
+    return next(err);
   }
 
-  const valFolderIdProm = validateFolderId(userId, folderId);
-  const valTagIdsProm = validateTagIds(userId, tags);
+  const inValidTags = tags.map(tag => {
+    return mongoose.Types.ObjectId.isValid(tag);
+  });
+
+  if (inValidTags.length === tags.length) {
+    newNote.tags = tags;
+  } else {
+    const err = new Error('The `tags.id` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+
+  const valFolderIdProm = validateFolderId(userId, newNote.folderId);
+  const valTagIdsProm = validateTagIds(userId, newNote.tags);
 
   Promise.all([valFolderIdProm, valTagIdsProm])
     .then(() => Note.create(newNote))
