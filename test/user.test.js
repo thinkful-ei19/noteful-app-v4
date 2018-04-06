@@ -29,7 +29,9 @@ describe('Noteful API - Users', function () {
   });
 
   afterEach(function () {
-    return mongoose.connection.db.dropDatabase();
+    return User.remove();
+    // return User.collection.drop();
+    // return mongoose.connection.db.dropDatabase()
   });
 
   after(function () {
@@ -38,7 +40,7 @@ describe('Noteful API - Users', function () {
 
   describe('/api/users', function () {
     describe('POST', function () {
-      it('Should create a new user', function () {
+      it('Should create a new user with valid password', function () {
         let res;
         return chai
           .request(app)
@@ -64,6 +66,7 @@ describe('Noteful API - Users', function () {
             expect(isValid).to.be.true;
           });
       });
+
       it('Should reject users with missing username', function () {
         return chai
           .request(app)
@@ -88,6 +91,7 @@ describe('Noteful API - Users', function () {
           });
 
       });
+
       it('Should reject users with non-string username', function () {
         return chai
           .request(app)
@@ -99,6 +103,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'username\' must be type String');
           });
       });
+
       it('Should reject users with non-string password', function () {
         return chai
           .request(app)
@@ -110,6 +115,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'password\' must be type String');
           });
       });
+
       it('Should reject users with non-trimmed username', function () {
         return chai
           .request(app)
@@ -121,6 +127,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'username\' cannot start or end with whitespace');
           });
       });
+
       it('Should reject users with non-trimmed password', function () {
         return chai
           .request(app)
@@ -132,6 +139,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'password\' cannot start or end with whitespace');
           });
       });
+
       it('Should reject users with empty username', function () {
         return chai
           .request(app)
@@ -143,6 +151,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'username\' must be at least 1 characters long');
           });
       });
+
       it('Should reject users with password less than 8 characters', function () {
         return chai
           .request(app)
@@ -154,6 +163,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'password\' must be at least 8 characters long');
           });
       });
+
       it('Should reject users with password greater than 72 characters', function () {
         return chai
           .request(app)
@@ -165,6 +175,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('Field: \'password\' must be at most 72 characters long');
           });
       });
+
       it('Should reject users with duplicate username', function () {
         return User
           .create({
@@ -184,6 +195,7 @@ describe('Noteful API - Users', function () {
             expect(res.body.message).to.equal('The username already exists');
           });
       });
+
       it('Should trim fullname', function () {
         return chai
           .request(app)

@@ -100,7 +100,7 @@ router.get('/notes/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/notes', (req, res, next) => {
-  const { title, content, folderId, tags } = req.body;
+  const { title, content, folderId, tags = [] } = req.body;
   const userId = req.user.id;
   const newNote = { title, content, userId };
 
@@ -111,18 +111,19 @@ router.post('/notes', (req, res, next) => {
     return next(err);
   }
 
-  if (mongoose.Types.ObjectId.isValid(folderId)) {
-    newNote.folderId = folderId;
-  } else {
-    const err = new Error('The `folderId` is not valid');
-    err.status = 400;
-    return next(err);
+  if (folderId) {
+    if (mongoose.Types.ObjectId.isValid(folderId)) {
+      newNote.folderId = folderId;
+    } else {
+      const err = new Error('The `folderId` is not valid');
+      err.status = 400;
+      return next(err);
+    }
   }
 
-  const inValidTags = tags.map(tag => {
+  const inValidTags = tags.filter(tag => {
     return mongoose.Types.ObjectId.isValid(tag);
   });
-
   if (inValidTags.length === tags.length) {
     newNote.tags = tags;
   } else {
